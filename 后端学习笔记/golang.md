@@ -79,91 +79,91 @@
  - 编写路由，返回token  
 
    - 用户参数校验
-
+     
      ```golang
       type auth struct{
-       Username string `valid:"Required;MaxSize(50)"`
-       Password string `valid:"Required;MaxSize(50)"`
+   	  Username string `valid:"Required;MaxSize(50)"`
+   	  Password string `valid:"Required;MaxSize(50)"`
       }
-     
+
      func GetAuth(c *gin.Context){
-       username:=c.Query("username")
-       password:=c.Query("password")
-     
-       valid:=validation.Validation{}
-        a:=auth{
-     	  Username: username,
-     	  Password: password,
-       }
-       
+   	  username:=c.Query("username")
+   	  password:=c.Query("password")
+
+   	  valid:=validation.Validation{}
+   	   a:=auth{
+   		  Username: username,
+   		  Password: password,
+   	  }
+   	  
        
        // 与之前的对每一个数据分开验证不同，此处在auth对象中通过定义标签valid
-       // 一次性校验对象中的所有字段信息
-       ok,_:=valid.Valid(&a)
+   	  // 一次性校验对象中的所有字段信息
+   	  ok,_:=valid.Valid(&a)
      
-       //创建返回信息
-       data:=make(map[string]interface{})
-       code:=e.INVALID_PARAMS
-       /*
-       根据用户名密码获取token 判断流程：
-       1. 先判断用户名密码是否存在
-       */
-       if ok{
-     	  isExist:=models.CheckAuth(username,password)
-     	  if isExist{
-     	    token,err:=util.GenerateToken(username,password)
-     	    if err!=nil{
-     	    code=e.ERROR_AUTH_TOKEN
-     	    }else{
-     	    data["token"]=token
-     	    code=e.SUCCESS
-     	    }
-         }else{
-            code=e.ERROR_AUTH
-     	 }
-       }else{
-         //如果数据验证失败，则打印结果
-     	 for _,err:=range valid.Errors{
-             log.Println(err.Key,err.Message)
-         }
-       } 
-     
-       c.JSON(http.StatusOK,util.ReturnData(code,e.GetMsg(code),data))
-      }
+   	  //创建返回信息
+   	  data:=make(map[string]interface{})
+   	  code:=e.INVALID_PARAMS
+   	  /*
+   	  根据用户名密码获取token 判断流程：
+   	  1. 先判断用户名密码是否存在
+   	  */
+   	  if ok{
+   		  isExist:=models.CheckAuth(username,password)
+   		  if isExist{
+   			  token,err:=util.GenerateToken(username,password)
+   			  if err!=nil{
+   				  code=e.ERROR_AUTH_TOKEN
+   			  }else{
+   				  data["token"]=token
+   				  code=e.SUCCESS
+   			  }
+   		  }else{
+   			  code=e.ERROR_AUTH
+   		  }
+   	  }else{
+   		  //如果数据验证失败，则打印结果
+   		  for _,err:=range valid.Errors{
+   			  log.Println(err.Key,err.Message)
+   		  }
+   	  } 
+
+   	  c.JSON(http.StatusOK,util.ReturnData(code,e.GetMsg(code),data))
+     }
      ```
 
    - 编写中间件，校验token字符串
 
     ```golang
     func JWY()gin.HandlerFunc{
-   	return func(c *gin.Context){
-   	    var  code int
-   	    var data interface{}
-   
-   	    code=e.SUCCESS
-   	    token:=c.Query("token")
-   	    if token==""{
-   	        code=e.ERROR_AUTH_NO_TOKRN
-            }else{
-   	    claims,err:=util.ParseToken(token)
-   	    if err!=nil{
-   	        code=e.ERROR_AUTH_CHECK_TOKEN_FAIL
-   	    }else if time.Now().Unix()>claims.ExpiresAt{
-   		code=e.ERROR_AUTH_CHECK_TOKEN_TIMEOUT
-   	    }
-       }
-   
-       //如果token验证不通过，直接终止程序，c.Abort()
-       if code!=e.SUCCESS{
-   	    // 返回错误信息
-   	    c.JSON(http.StatusUnauthorized,util.ReturnData(code,e.GetMsg(code),data))
-   	    //终止程序
-            c.Abort()
-   	    return
-       }
-       c.Next()
-      }
-    }
+	return func(c *gin.Context){
+		var  code int
+		var data interface{}
+
+		code=e.SUCCESS
+		token:=c.Query("token")
+		if token==""{
+			code=e.ERROR_AUTH_NO_TOKRN
+		}else{
+			claims,err:=util.ParseToken(token)
+			if err!=nil{
+				code=e.ERROR_AUTH_CHECK_TOKEN_FAIL
+			}else if time.Now().Unix()>claims.ExpiresAt{
+				code=e.ERROR_AUTH_CHECK_TOKEN_TIMEOUT
+			}
+		}
+
+		//如果token验证不通过，直接终止程序，c.Abort()
+		if code!=e.SUCCESS{
+			// 返回错误信息
+			c.JSON(http.StatusUnauthorized,util.ReturnData(code,e.GetMsg(code),data))
+			//终止程序
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
     ```
 
 2. bcrypt
