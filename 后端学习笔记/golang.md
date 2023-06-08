@@ -165,3 +165,70 @@
       }
     }
     ```
+
+2. bcrypt
+  
+  - 安装相关依赖
+
+    ```golang
+    go get golang.org/x/crypto/bcrypt
+    ```
+    
+  - bcrypt介绍
+    - bcrypt是单向Hash加密算法，不可反向破解生成明文。
+    - bcrypt是一种加盐的加密方法，MD5加密时候，同一个密码经过hash的时候生成的是同一个hash值，在大数据的情况下，有些经过md5加密的方法将会被破解。
+    - 使用bcrypt进行加密，同一个密码每次生成的hash值都是不相同的。每次加密的时候首先会生成一个随机数就是盐，之后将这个随机数与密码进行hash。
+
+  - 实例
+
+```golang
+// 加密密码
+func HashAndSalt(pwdStr string) (pwdHash string, err error) {
+	pwd := []byte(pwdStr)
+	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
+	if err != nil {
+		return
+	}
+	pwdHash = string(hash)
+	return
+}
+
+// 验证密码
+func ComparePasswords(hashedPwd string, plainPwd string) bool {
+	byteHash := []byte(hashedPwd)
+	bytePwd := []byte(plainPwd)
+	err := bcrypt.CompareHashAndPassword(byteHash, bytePwd)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func main() {
+
+	passwordOK := "admin"
+	passwordERR := "adminxx"
+
+	hashStr, err := HashAndSalt(passwordOK)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(hashStr)
+
+	// 正确密码验证
+	check := ComparePasswords(hashStr, passwordOK)
+	if !check {
+		fmt.Println("pw wrong")
+	} else {
+		fmt.Println("pw ok")
+	}
+
+	// 错误密码验证
+	check = ComparePasswords(hashStr, passwordERR)
+	if !check {
+		fmt.Println("pw wrong")
+	} else {
+		fmt.Println("pw ok")
+	}
+}
+```
