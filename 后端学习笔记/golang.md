@@ -111,21 +111,21 @@
        if ok{
      	  isExist:=models.CheckAuth(username,password)
      	  if isExist{
-     		 token,err:=util.GenerateToken(username,password)
-     		 if err!=nil{
-     		  code=e.ERROR_AUTH_TOKEN
-     		 }else{
-     		  data["token"]=token
-     			code=e.SUCCESS
-     		 }
-     	   }else{
-     		  code=e.ERROR_AUTH
-     	   }
-        }else{
-     	    //如果数据验证失败，则打印结果
-     	    for _,err:=range valid.Errors{
-     		    log.Println(err.Key,err.Message)
-     	   }
+     	    token,err:=util.GenerateToken(username,password)
+     	    if err!=nil{
+     	    code=e.ERROR_AUTH_TOKEN
+     	    }else{
+     	    data["token"]=token
+     	    code=e.SUCCESS
+     	    }
+         }else{
+            code=e.ERROR_AUTH
+     	 }
+       }else{
+         //如果数据验证失败，则打印结果
+     	 for _,err:=range valid.Errors{
+             log.Println(err.Key,err.Message)
+         }
        } 
      
        c.JSON(http.StatusOK,util.ReturnData(code,e.GetMsg(code),data))
@@ -135,33 +135,33 @@
    - 编写中间件，校验token字符串
 
     ```golang
-     func JWY()gin.HandlerFunc{
-   	  return func(c *gin.Context){
-   		 var  code int
-   		 var data interface{}
+    func JWY()gin.HandlerFunc{
+   	return func(c *gin.Context){
+   	    var  code int
+   	    var data interface{}
    
-   		 code=e.SUCCESS
-   		 token:=c.Query("token")
-   		 if token==""{
-   			 code=e.ERROR_AUTH_NO_TOKRN
-   		 }else{
-   			 claims,err:=util.ParseToken(token)
-   			 if err!=nil{
-   				 code=e.ERROR_AUTH_CHECK_TOKEN_FAIL
-   			 }else if time.Now().Unix()>claims.ExpiresAt{
-   				 code=e.ERROR_AUTH_CHECK_TOKEN_TIMEOUT
-   			 }
-   		 }
+   	    code=e.SUCCESS
+   	    token:=c.Query("token")
+   	    if token==""{
+   	        code=e.ERROR_AUTH_NO_TOKRN
+            }else{
+   	    claims,err:=util.ParseToken(token)
+   	    if err!=nil{
+   	        code=e.ERROR_AUTH_CHECK_TOKEN_FAIL
+   	    }else if time.Now().Unix()>claims.ExpiresAt{
+   		code=e.ERROR_AUTH_CHECK_TOKEN_TIMEOUT
+   	    }
+       }
    
-   		 //如果token验证不通过，直接终止程序，c.Abort()
-   		 if code!=e.SUCCESS{
-   			 // 返回错误信息
-   			 c.JSON(http.StatusUnauthorized,util.ReturnData(code,e.GetMsg(code),data))
-   			 //终止程序
-   			 c.Abort()
-   		  return
-   	  }
-   	  c.Next()
-	    }
+       //如果token验证不通过，直接终止程序，c.Abort()
+       if code!=e.SUCCESS{
+   	    // 返回错误信息
+   	    c.JSON(http.StatusUnauthorized,util.ReturnData(code,e.GetMsg(code),data))
+   	    //终止程序
+            c.Abort()
+   	    return
+       }
+       c.Next()
+      }
     }
     ```
